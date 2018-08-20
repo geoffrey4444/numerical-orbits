@@ -31,7 +31,7 @@ class orbit:
                  gravSoftenEps = 1.e-13,
                  firstTimeToCountFuel = 0.0):
         # What type of system are we solving?
-        # Possible values: "L1_2Body", "EarthTrailing_2Body", "L1", "EarthTrailing"
+        # Possible values: "L1_2Body", "EarthTrailing_2Body", "EarthTrailing_1Body", "L1", "EarthTrailing"
         self.system = system
         
         # Initialize the satellites        
@@ -61,6 +61,10 @@ class orbit:
         elif system == "EarthTrailing_2Body":
             self.bodiesAstro = ['earth','sun']
             self.massesAstro = [constants.mearthkg/constants.msunkg,1.0]
+            
+        elif system == "EarthTrailing_1Body":
+            self.bodiesAstro = ['sun']
+            self.massesAstro = [1.0]
        
         elif system == "L1":
             self.bodiesAstro = self.theJPL.bodies
@@ -168,6 +172,12 @@ class orbit:
                                            * self.getSeparationVector(t)))
         return np.array(astroPositionsList)
     
+    def getAstroPositions1Body(self, t):
+        astroPositionsList = []
+        # Position of only mass (sun)
+        astroPositionsList.append(np.zeros(3))
+        return np.array(astroPositionsList)
+    
     # Find the radial Lagrange points at time t=0.
     # At this time, put a particle on the x axis at some position x. The acceleration, if the 
     # particle is in a circular orbit, should be - x Omega^2.
@@ -200,6 +210,14 @@ class orbit:
     def getEarthTrailingAcceleration2body(self, t):
         return np.array((self.massesAstro[1]/(self.massesAstro[0]+self.massesAstro[1])) 
                          * self.getSeparationAccelerationVector(t - self.earthTrailingDays))
+    
+    # Functions that know the earth trailing position vs time (sun only)
+    def getEarthTrailingPosition1body(self, t):
+        return np.array(self.getSeparationVector(t - self.earthTrailingDays))
+    def getEarthTrailingVelocity1body(self, t):
+        return np.array(self.getSeparationVelocityVector(t - self.earthTrailingDays))
+    def getEarthTrailingAcceleration1body(self, t):
+        return np.array(self.getSeparationAccelerationVector(t - self.earthTrailingDays))
     # fj = [deltaxsat1,deltaysat1,deltazsat1,deltavxsat1,deltavysat1,deltavzsat1,deltaxsat2,...]
     # ak = [ax1,ay1,az1,ax2,...]
     
@@ -263,6 +281,9 @@ class orbit:
         elif self.system == "EarthTrailing_2Body":
             x0 = self.getEarthTrailingPosition2body(t)
             dvdt0 = self.getEarthTrailingAcceleration2body(t)
+        elif self.system == "EarthTrailing_1Body":
+            x0 = self.getEarthTrailingPosition1body(t)
+            dvdt0 = self.getEarthTrailingAcceleration1body(t)
         elif self.system == "L1":
             x0 = self.getL1PositionJPL(t)
             dvdt0 = self.getL1AccelerationJPL(t)
@@ -311,6 +332,8 @@ class orbit:
             return self.getAstroPositions2Body(t)            
         elif self.system == "EarthTrailing_2Body":
             return self.getAstroPositions2Body(t)
+        elif self.system == "EarthTrailing_1Body":
+            return self.getAstroPositions1Body(t)
         elif self.system == "L1":
             return self.getAstroPositionsJPL(t)
         elif self.system == "EarthTrailing":
@@ -354,7 +377,7 @@ class orbit:
         errorsSum0 = []
         derrors0 = []
         for ns in np.arange(nSatellites):
-            for j in np.arange(3): #x,y,z control for this sattelite
+            for j in np.arange(3): #x,y,z control for this sattelite               
                 errors0.append(f0[int(6*ns+j)]-pidParams[int(3*ns+j)][0])
                 errorsSum0.append(0.0)
                 derrors0.append(0.0)

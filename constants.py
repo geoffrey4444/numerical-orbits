@@ -29,6 +29,10 @@ class constants:
 
     GinAU3dm2 = 0.000295912208  #(* msun=1, AU3dm2 = AU**3 day**-2 *) #(*msun=1*)
     omegaEarthPerDay = math.sqrt(GinAU3dm2*(1.0+mearthkg/msunkg))
+    
+    rLISAm = 5.0e9
+    rTIANm = 5.0e4
+    rTIANGOm = 1.0e6
 
     rearthau = 1.0 #(* AU *) #radius of earth orbit
 
