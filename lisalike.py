@@ -57,8 +57,8 @@ class lisalike:
         eccentricAnomaly = self.getEccentricAnomaly(time, whichSatellite, x0)
         return self.orbitFrequency / (1.0 + self.eccentricity * math.cos(eccentricAnomaly))
         
-    def position1(self, time, x0=0.0):
-        eccentricAnomaly = self.getEccentricAnomaly(time, 1, x0)
+    def position1(self, time, whichSatellite, x0=0.0):
+        eccentricAnomaly = self.getEccentricAnomaly(time, whichSatellite, x0)
         temp = (math.cos(eccentricAnomaly)+self.eccentricity)
         position1 = np.array([self.orbitRadius * temp * math.cos(self.inclination),
                               self.orbitRadius * math.sin(eccentricAnomaly)*math.sqrt(1.0-self.eccentricity**2),
@@ -67,7 +67,7 @@ class lisalike:
     
     # Note: whichSatellite = 1,2,3 for the 3 satellites
     def position(self, time, whichSatellite, x0=0.0):
-        position1 = self.position1(time, x0)
+        position1 = self.position1(time, whichSatellite, x0)
         sigma = self.sigma(whichSatellite)
         position = np.array([position1[0] * math.cos(sigma) - position1[1] * math.sin(sigma),
                             position1[0] * math.sin(sigma) + position1[1] * math.cos(sigma),
@@ -80,8 +80,8 @@ class lisalike:
                                                        math.sin(self.orbitFrequency * time),
                                                        0.0])
     
-    def velocity1(self, time, x0=0.0):
-        eccentricAnomaly = self.getEccentricAnomaly(time, 1, x0)
+    def velocity1(self, time, whichSatellite, x0=0.0):
+        eccentricAnomaly = self.getEccentricAnomaly(time, whichSatellite, x0)
         velocity1 = self.orbitRadius * np.array([-1.0 * math.sin(eccentricAnomaly) * math.cos(self.inclination),
                                                  math.cos(eccentricAnomaly)*math.sqrt(1.0-self.eccentricity**2),
                                                  -1.0 * math.sin(eccentricAnomaly) * math.sin(self.inclination)
@@ -90,7 +90,7 @@ class lisalike:
         return velocity1
     
     def velocity(self, time, whichSatellite, x0=0.0):
-        velocity1 = self.velocity1(time, x0)
+        velocity1 = self.velocity1(time, whichSatellite, x0)
         sigma = self.sigma(whichSatellite)
         velocity = np.array([velocity1[0] * math.cos(sigma) - velocity1[1] * math.sin(sigma),
                             velocity1[0] * math.sin(sigma) + velocity1[1] * math.cos(sigma),
