@@ -5,7 +5,7 @@
     # First, let's program in the circular orbits of our test solar system model.
 
 import math
-from constants import constants
+from constants import constants as k
 from timestepping import timestepping
 from jpl import jpl as jpl
 
@@ -24,9 +24,9 @@ class orbit:
     
     def __init__(self,
                  system = "L1_2Body",                 
-                 massesSatellites = [constants.msat1kg/constants.msunkg, 
-                                 constants.msat2kg/constants.msunkg, 
-                                 constants.msat3kg/constants.msunkg],
+                 massesSatellites = [k.msat1kg/k.msunkg, 
+                                 k.msat2kg/k.msunkg, 
+                                 k.msat3kg/k.msunkg],
                  earthTrailingDays = 20,
                  gravSoftenEps = 1.e-13,
                  firstTimeToCountFuel = 0.0):
@@ -55,12 +55,12 @@ class orbit:
         # Set up constants
         if system == "L1_2Body":
             self.bodiesAstro = ['earth','sun']
-            self.massesAstro = [constants.mearthkg/constants.msunkg,1.0]
+            self.massesAstro = [k.mearthkg/k.msunkg,1.0]
             self.L1Rad2Body = optimize.fsolve(self.lagrangeRootFindFuncTimeZero,
                                               [0.99], xtol=1.e-14)[0]
         elif system == "EarthTrailing_2Body":
             self.bodiesAstro = ['earth','sun']
-            self.massesAstro = [constants.mearthkg/constants.msunkg,1.0]
+            self.massesAstro = [k.mearthkg/k.msunkg,1.0]
             
         elif system == "EarthTrailing_1Body":
             self.bodiesAstro = ['sun']
@@ -78,7 +78,7 @@ class orbit:
             print("WARNING! Defaulting to L1_2Body system in orbit.__init__.")
             system = "L1_2Body"
             self.bodiesAstro = ['earth','sun']
-            self.massesAstro = [constants.mearthkg/constants.msunkg,1.0]
+            self.massesAstro = [k.mearthkg/k.msunkg,1.0]
             self.L1Rad2Body = optimize.fsolve(self.lagrangeRootFindFuncTimeZero,
                                               [0.99], xtol=1.e-14)[0]
             self.system = system
@@ -100,7 +100,7 @@ class orbit:
             for rjN in rN:
                 rSqN += rjN*rjN
             rSqN += self.gravSoftenEps * self.gravSoftenEps
-            accelVecList -= np.array((constants.GinAU3dm2*MN/(rSqN**1.5))*rN)
+            accelVecList -= np.array((k.GinAU3dm2*MN/(rSqN**1.5))*rN)
         return np.array(accelVecList)
 
     def FgravPerMassOtherSats(self, nThisSat, fj):
@@ -119,7 +119,7 @@ class orbit:
                 for rjN in rN:
                     rSqN += rjN*rjN
                 rSqN += self.gravSoftenEps * self.gravSoftenEps  
-                accelVecList -= np.array((constants.GinAU3dm2*self.massesSatellites[ns]/(rSqN**1.5))*rN)
+                accelVecList -= np.array((k.GinAU3dm2*self.massesSatellites[ns]/(rSqN**1.5))*rN)
                 ns += 1
         return np.array(accelVecList)
 
@@ -135,26 +135,23 @@ class orbit:
     # First, define 2-body functions
     # Helper function computes separation between sun and Earth for two-body problem
     # Also make helper functions to compute the first and second time derivatives
-    def getSeparationVector(self,t):
+    def getSeparationVector(self, t, omega=k.omegaEarthPerDay2Body):
         startAngle = 0.0 #rad
         startTime = 0.0 #day
-        omega = constants.omegaEarthPerDay
         rad = 1.0 #AU
         return rad * np.array([math.cos(startAngle + omega*(t-startTime)),
                          math.sin(startAngle + omega*(t-startTime)),
                          0.0])    
-    def getSeparationVelocityVector(self,t):
+    def getSeparationVelocityVector(self, t, omega=k.omegaEarthPerDay2Body):
         startAngle = 0.0 #rad
         startTime = 0.0 #day
-        omega = constants.omegaEarthPerDay
         rad = 1.0 #AU
         return rad * np.array([-1.0*omega*math.sin(startAngle + omega*(t-startTime)),
                          omega*math.cos(startAngle + omega*(t-startTime)),
                          0.0])    
-    def getSeparationAccelerationVector(self,t):
+    def getSeparationAccelerationVector(self, t, omega=k.omegaEarthPerDay2Body):
         startAngle = 0.0 #rad
         startTime = 0.0 #day
-        omega = constants.omegaEarthPerDay
         rad = 1.0 #AU
         return rad * np.array([-1.0*omega*omega
                                *math.cos(startAngle + omega*(t-startTime)),
@@ -181,24 +178,23 @@ class orbit:
     # Find the radial Lagrange points at time t=0.
     # At this time, put a particle on the x axis at some position x. The acceleration, if the 
     # particle is in a circular orbit, should be - x Omega^2.
-    def lagrangeRootFindFuncTimeZero(self, x):
-        omegaEarthPerDay = constants.omegaEarthPerDay
-        return omegaEarthPerDay*omegaEarthPerDay*x + self.FgravPerMass(0.0, [x,0.0,0.0])[0]
+    def lagrangeRootFindFuncTimeZero(self, x, omega=k.omegaEarthPerDay2Body):
+        return omega*omega*x + self.FgravPerMass(0.0, [x,0.0,0.0])[0]
     
     # Functions that know the position of L1 vs. time.
-    def getL1Position2body(self, t):
-        return np.array([self.L1Rad2Body*math.cos(constants.omegaEarthPerDay*t), 
-                         self.L1Rad2Body*math.sin(constants.omegaEarthPerDay*t),
+    def getL1Position2body(self, t, omega=k.omegaEarthPerDay2Body):
+        return np.array([self.L1Rad2Body*math.cos(omega*t), 
+                         self.L1Rad2Body*math.sin(omega*t),
                          0.0])
-    def getL1Velocity2body(self, t):
-        return np.array([-1.0*self.L1Rad2Body*constants.omegaEarthPerDay*math.sin(constants.omegaEarthPerDay*t), 
-                         self.L1Rad2Body*constants.omegaEarthPerDay*math.cos(constants.omegaEarthPerDay*t),
+    def getL1Velocity2body(self, t, omega=k.omegaEarthPerDay2Body):
+        return np.array([-1.0*self.L1Rad2Body*omega*math.sin(omega*t), 
+                         self.L1Rad2Body*omega*math.cos(omega*t),
                          0.0])
-    def getL1Acceleration2body(self, t):
-        return np.array([-1.0*self.L1Rad2Body*constants.omegaEarthPerDay*constants.omegaEarthPerDay
-                         *math.cos(constants.omegaEarthPerDay*t), 
-                         -1.0*self.L1Rad2Body*constants.omegaEarthPerDay*constants.omegaEarthPerDay
-                         *math.sin(constants.omegaEarthPerDay*t),
+    def getL1Acceleration2body(self, t, omega=k.omegaEarthPerDay2Body):
+        return np.array([-1.0*self.L1Rad2Body*omega*omega
+                         *math.cos(omega*t), 
+                         -1.0*self.L1Rad2Body*omega*omega
+                         *math.sin(omega*t),
                          0.0])
     # Functions that know the earth trailing position vs time
     def getEarthTrailingPosition2body(self, t):
@@ -213,11 +209,11 @@ class orbit:
     
     # Functions that know the earth trailing position vs time (sun only)
     def getEarthTrailingPosition1body(self, t):
-        return np.array(self.getSeparationVector(t - self.earthTrailingDays))
-    def getEarthTrailingVelocity1body(self, t):
-        return np.array(self.getSeparationVelocityVector(t - self.earthTrailingDays))
+        return np.array(self.getSeparationVector(t - self.earthTrailingDays, omega=k.omegaEarthPerDay1Body))
+    def getEarthTrailingVelocity1body(self, t, omega=k.omegaEarthPerDay1Body):
+        return np.array(self.getSeparationVelocityVector(t - self.earthTrailingDays, omega=k.omegaEarthPerDay1Body))
     def getEarthTrailingAcceleration1body(self, t):
-        return np.array(self.getSeparationAccelerationVector(t - self.earthTrailingDays))
+        return np.array(self.getSeparationAccelerationVector(t - self.earthTrailingDays, omega=k.omegaEarthPerDay1Body))
     # fj = [deltaxsat1,deltaysat1,deltazsat1,deltavxsat1,deltavysat1,deltavzsat1,deltaxsat2,...]
     # ak = [ax1,ay1,az1,ax2,...]
     
@@ -312,7 +308,7 @@ class orbit:
             gi[6*ns+1] = fj[6*ns+4]
             gi[6*ns+2] = fj[6*ns+5]
             
-            # Velocity RHSs have 3 terms:
+            # Velocity RHSs have 4 terms:
             # 1. -dv/dt of the base position (e.g. L1 or earth-trailing point)
             # 2. control acceleration ak
             # 3. gravitational acceleration from astronomical bodies
@@ -460,7 +456,7 @@ class orbit:
 #                fuel[n][i] += 0.1
 #                  fuel[n][i]+=0.0001
                   if (tNew > self.firstTimeToCountFuel):
-                      fuel[n][i] += constants.msat1kg*(((constants.sPerDay*(tNew-t))*(constants.accelToSI*(abs(akNew[3*n+i])+abs(ak[3*n+i])))/2))/(constants.impulsePerMassFuelSI)
+                      fuel[n][i] += k.msat1kg*(((k.sPerDay*(tNew-t))*(k.accelToSI*(abs(akNew[3*n+i])+abs(ak[3*n+i])))/2))/(k.impulsePerMassFuelSI)
                   i+=1
                n+=1
             
@@ -621,7 +617,7 @@ class orbit:
 #                fuel[n][i] += 0.1
 #                  fuel[n][i]+=0.0001
                   if tNew > self.firstTimeToCountFuel:
-                      fuel[n][i] += constants.msat1kg*(((constants.sPerDay*(tNew-t))*(constants.accelToSI*(abs(akNew[3*n+i])+abs(ak[3*n+i])))/2))/(constants.impulsePerMassFuelSI)
+                      fuel[n][i] += k.msat1kg*(((k.sPerDay*(tNew-t))*(k.accelToSI*(abs(akNew[3*n+i])+abs(ak[3*n+i])))/2))/(k.impulsePerMassFuelSI)
                   i+=1
                n+=1
 

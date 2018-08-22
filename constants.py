@@ -28,7 +28,8 @@ class constants:
     rsunau = rsunm/mPerAU #(* m/AU *)
 
     GinAU3dm2 = 0.000295912208  #(* msun=1, AU3dm2 = AU**3 day**-2 *) #(*msun=1*)
-    omegaEarthPerDay = math.sqrt(GinAU3dm2*(1.0+mearthkg/msunkg))
+    omegaEarthPerDay2Body = math.sqrt(GinAU3dm2*(1.0+mearthkg/msunkg)) #assumes only earth and sun
+    omegaEarthPerDay1Body = math.sqrt(GinAU3dm2) #assumes only sun
     
     rLISAm = 5.0e9
     rTIANm = 5.0e4
@@ -39,9 +40,9 @@ class constants:
     # satellite masses in kg
     # lisa pathfinder beginning of operational life mass is 480 kg
     # https://en.wikipedia.org/wiki/LISA_Pathfinder
-    msat1kg = 500
-    msat2kg = 500
-    msat3kg = 500
+    msat1kg = 0.0 #500.0
+    msat2kg = 0.0 #500.0
+    msat3kg = 0.0 #500.0
     
     sPerDay = 86400.0
     accelToSI = mPerAU / (sPerDay * sPerDay) # converts AU/day/day to m/s/s

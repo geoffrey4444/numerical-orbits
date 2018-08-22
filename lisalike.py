@@ -14,9 +14,9 @@ from scipy.optimize import newton
 class lisalike:
     
     # Defaults: orbit average radius = 1.0 AU
-    #           orbit angualr velocity average = omegaEarthPerDay
+    #           orbit angualr velocity average = omegaEarthPerDay1Body (assume only Sun)
     #           delta = 0.0
-    def __init__(self, triangleSideLength=k.rLISAm/k.mPerAU, orbitRadius=1.0, orbitFrequency=k.omegaEarthPerDay, delta=0.0):
+    def __init__(self, triangleSideLength=k.rLISAm/k.mPerAU, orbitRadius=1.0, orbitFrequency=k.omegaEarthPerDay1Body, delta=0.0):
         self.triangleSideLength = triangleSideLength
         self.orbitRadius = orbitRadius
         self.orbitFrequency = orbitFrequency
@@ -56,6 +56,11 @@ class lisalike:
     def dtEccentricAnomaly(self, time, whichSatellite, x0=0.0):
         eccentricAnomaly = self.getEccentricAnomaly(time, whichSatellite, x0)
         return self.orbitFrequency / (1.0 + self.eccentricity * math.cos(eccentricAnomaly))
+    
+    def ddtEccentricAnomaly(self, time, whichSatellite, x0=0.0):
+        eccentricAnomaly = self.getEccentricAnomaly(time, whichSatellite, x0)
+        dtEccentricAnomaly = self.dtEccentricAnomaly(time, whichSatellite, x0)
+        return self.orbitFrequency * self.eccentricity * math.sin(eccentricAnomaly) * dtEccentricAnomaly / (1.0 + self.eccentricity * math.cos(eccentricAnomaly))**2
         
     def position1(self, time, whichSatellite, x0=0.0):
         eccentricAnomaly = self.getEccentricAnomaly(time, whichSatellite, x0)
@@ -86,7 +91,7 @@ class lisalike:
                                                  math.cos(eccentricAnomaly)*math.sqrt(1.0-self.eccentricity**2),
                                                  -1.0 * math.sin(eccentricAnomaly) * math.sin(self.inclination)
                                                  ])
-        velocity1 *= self.dtEccentricAnomaly(time, 1, x0)
+        velocity1 *= self.dtEccentricAnomaly(time, whichSatellite, x0)
         return velocity1
     
     def velocity(self, time, whichSatellite, x0=0.0):
@@ -102,6 +107,30 @@ class lisalike:
         return velocity - self.orbitRadius * self.orbitFrequency * np.array([-1.0* math.sin(self.orbitFrequency * time),
                                                                              math.cos(self.orbitFrequency * time),
                                                                              0.0])
+    def acceleration1(self, time, whichSatellite, x0=0.0):
+        eccentricAnomaly = self.getEccentricAnomaly(time, whichSatellite, x0)
+        acceleration1 = self.orbitRadius * np.array([-1.0 * math.cos(eccentricAnomaly) * math.cos(self.inclination),
+                                                 -1.0 * math.sin(eccentricAnomaly)*math.sqrt(1.0-self.eccentricity**2),
+                                                 -1.0 * math.cos(eccentricAnomaly) * math.sin(self.inclination)
+                                                 ])
+        acceleration1 *= self.dtEccentricAnomaly(time, whichSatellite, x0) * self.dtEccentricAnomaly(time, whichSatellite, x0)
+        acceleration1 += self.orbitRadius * np.array([-1.0 * math.sin(eccentricAnomaly) * math.cos(self.inclination),
+                                                 math.cos(eccentricAnomaly)*math.sqrt(1.0-self.eccentricity**2),
+                                                 -1.0 * math.sin(eccentricAnomaly) * math.sin(self.inclination)
+                                                 ]) * self.ddtEccentricAnomaly(time, whichSatellite, x0)
+        return acceleration1
+    
+    def acceleration(self, time, whichSatellite, x0=0.0):
+        acceleration1 = self.acceleration1(time, whichSatellite, x0)
+        sigma = self.sigma(whichSatellite)
+        acceleration = np.array([acceleration1[0] * math.cos(sigma) - acceleration1[1] * math.sin(sigma),
+                            acceleration1[0] * math.sin(sigma) + acceleration1[1] * math.cos(sigma),
+                            acceleration1[2]])
+        return acceleration
+    
+    def relativeAcceleration(self, time, whichSatellite, x0=0.0):
+        acceleration = self.acceleration(time, whichSatellite, x0=0.0)
+        return acceleration - self.orbitRadius * self.orbitFrequency * self.orbitFrequency * np.array([-1.0 * math.cos(self.orbitFrequency * time), -1.0 * math.sin(self.orbitFrequency * time),  0.0])
     
         
         
